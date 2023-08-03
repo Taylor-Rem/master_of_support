@@ -22,12 +22,7 @@ class App(QWidget):
         self.stack = QStackedWidget()
 
         # Init Classes
-        self.webdriver = WebdriverOperations()
-        self.os_interact = OSInteract()
-        self.csv_ops = CsvOperations()
-        self.scrape = Scrape(self.webdriver)
-        self.resmap_ops = ResmapOperations(self.webdriver, self.scrape)
-
+        self.init_classes()
         # Init UI
         self.initUI()
 
@@ -39,6 +34,13 @@ class App(QWidget):
 
         self.setLayout(QVBoxLayout())
         self.layout().addWidget(self.stack)
+
+    def init_classes(self):
+        self.webdriver = WebdriverOperations()
+        self.os_interact = OSInteract()
+        self.csv_ops = CsvOperations()
+        self.scrape = Scrape(self.webdriver)
+        self.resmap_ops = ResmapOperations(self.webdriver, self.scrape)
 
     def init_windows(self):
         self.init_main_window()
@@ -118,7 +120,7 @@ class Redstar(HelperWidget):
     def __init__(self, main_app):
         super().__init__(main_app, "Red Star")
         self.redstar = RunRedstar(
-            main_app.webdriver, main_app.os_interact, main_app.csv_ops, main_app.scrape
+            main_app.webdriver, main_app.os_interact, main_app.csv_ops
         )
         self.run_report = self.create_button("Run Report", self.run_report)
         self.add_back_btn()
@@ -130,6 +132,13 @@ class Redstar(HelperWidget):
 if __name__ == "__main__":
     OSInteract().create_folders()
     app = QApplication([])
-    main_app = App()
-    main_app.show()
-    app.exec_()
+    main_app = None
+    try:
+        main_app = App()
+        main_app.show()
+        app.exec_()
+    except Exception as e:
+        print(f"An error occured: {e}")
+    finally:
+        if main_app and main_app.webdriver:
+            main_app.webdriver.close()

@@ -23,10 +23,10 @@ class ResmapOperations:
 
     def search_resident(self, resident, num):
         self.webdriver.click(
-            By.XPATH,
-            f"/html/body/table[2]/tbody/tr[4]/td/table/tbody/tr/td/table[3]/tbody/tr[1]/td/table/tbody/tr/td[3]/input[{num}]",
+            By.ID,
+            f"former{num}",
         )
-        self.send_keys(By.NAME, "ressearch", resident + Keys.ENTER)
+        self.webdriver.send_keys(By.NAME, "ressearch", resident + Keys.ENTER)
 
     def compare_resident(self, resident):
         RM_resident = self.scrape.scrape_resident()
@@ -39,15 +39,15 @@ class ResmapOperations:
 
     def open_unit_and_ledger(self, unit, resident):
         self.open_unit(unit)
-        if self.compare_resident(resident):
+        if self.compare_resident(resident) or resident is None:
             self.open_ledger()
         else:
             self.search_resident_and_open_ledger(resident)
 
     def search_resident_and_open_ledger(self, resident):
         try:
-            self.webdriver.search_resident(resident, 2)
+            self.search_resident(resident, 2)
             self.open_ledger()
         except NoSuchElementException:
-            self.webdriver.search_resident(resident, 1)
+            self.search_resident(resident, 1)
             self.open_ledger()

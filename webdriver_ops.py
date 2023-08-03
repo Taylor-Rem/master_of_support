@@ -6,6 +6,7 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import NoSuchElementException, NoSuchWindowException
+from selenium.webdriver.common.action_chains import ActionChains
 
 from config import username, password
 
@@ -24,7 +25,6 @@ class WebdriverOperations:
         if self.__initialized:
             return
         self.driver = self.setup_webdriver()
-        self.wait = WebDriverWait(self.driver, 10)
         self.__initialized = True
         self.primary_tab = None
         self.res_map_url = "https://kingsley.residentmap.com/index.php"
@@ -34,6 +34,11 @@ class WebdriverOperations:
         service = Service()
         options = webdriver.ChromeOptions()
         return webdriver.Chrome(service=service, options=options)
+
+    def check_webpage(self, url):
+        if self.driver.current_url != url:
+            return False
+        return True
 
     def return_element(self, by, value):
         try:
@@ -50,9 +55,15 @@ class WebdriverOperations:
             element.send_keys(keys)
 
     def click(self, by, value):
-        element = self.driver.find_element(by, value)
-        if element:
-            element.click()
+        try:
+            element = self.driver.find_element(by, value)
+            is_clickable = element.is_displayed() and element.is_enabled()
+            actions = ActionChains(self.driver)
+            if element and is_clickable:
+                actions.move_to_element(element).perform()
+                element.click()
+        except NoSuchElementException:
+            pass
 
     def new_tab(self):
         self.driver.execute_script("window.open('about:blank', '_blank');")

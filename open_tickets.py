@@ -10,6 +10,6 @@ class OpenTickets:
         print(property, unit, resident)
         self.webdriver.new_tab()
         self.webdriver.open_program(self.webdriver.res_map_url)
-        self.res_map_op.open_property(property)
+        self.resmap_ops.open_property(property)
         if unit is not None:
-            self.res_map_op.open_unit_and_ledger(unit, resident)
+            self.resmap_ops.open_unit_and_ledger(unit, resident)
