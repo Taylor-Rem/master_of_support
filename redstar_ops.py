@@ -35,12 +35,16 @@ class RedstarOps:
         else:
             return None
 
-    def return_transaction_and_amount(self, row):
+    def retrieve_transaction_and_amount(self, row):
         cells = row.find_all("td")
-        if len(cells) >= 4:
-            transaction = cells[2].get_text(strip=True)
-            amount = cells[3].get_text(strip=True)
-            return transaction, amount
+        transaction = cells[2].get_text(strip=True)
+        amount = cells[3].get_text(strip=True)
+        return transaction, amount
+
+    def retrieve_amount_from_bottom(self, row):
+        cells = row.find_all("td")
+        amount = cells[1].get_text(strip=True)
+        return amount
 
     def auto_allocate(self):
         self.webdriver.click(By.NAME, "realloc_trid")

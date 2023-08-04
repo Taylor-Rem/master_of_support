@@ -47,12 +47,15 @@ class WebdriverOperations:
         except NoSuchElementException:
             return None
 
-    def send_keys(self, by, value, keys, clear=True):
-        element = self.driver.find_element(by, value)
-        if element:
-            if clear:
-                element.clear()
-            element.send_keys(keys)
+    def send_keys(self, by, value, keys, enter=False):
+        try:
+            input = self.driver.find_element(by, value)
+            input.clear()
+            input.send_keys(keys)
+            if enter:
+                input.send_keys(Keys.ENTER)
+        except NoSuchElementException:
+            pass
 
     def click(self, by, value):
         try:
@@ -84,8 +87,7 @@ class WebdriverOperations:
     def login(self, username, password):
         try:
             self.send_keys(By.NAME, "username", username)
-            self.send_keys(By.NAME, "password", password)
-            self.send_keys(By.NAME, "password", Keys.ENTER, clear=False)
+            self.send_keys(By.NAME, "password", password, enter=True)
         except NoSuchElementException:
             pass
 
