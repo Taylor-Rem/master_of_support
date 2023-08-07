@@ -9,6 +9,10 @@ class RunRedstar:
         self.os_interact = os_interact
         self.csv_ops = csv_ops
         self.redstar_ops = RedstarOps(webdriver)
+        # self.prepaid_rent_amount = self.webdriver.return_element(
+        #     By.XPATH,
+        #     "/html/body/table[2]/tbody/tr[4]/td/table/tbody/tr/td/table[3]/tbody/tr[2]/td/table/tbody/tr[3]/td[5]",
+        # )
         self.tables = {"previous_month": -5, "current_month": -4, "bottom": -1}
 
     def run_redstar(self):
@@ -18,59 +22,42 @@ class RunRedstar:
 
     def loop_through_ledgers(self, URLs):
         for URL in URLs:
-            # for i in range(2):
             self.webdriver.driver.get(URL)
-            self.current_url = self.webdriver.driver.current_url
-            current_month_rows = self.get_rows(self.tables["current_month"])
-            bottom_rows = self.get_rows(self.tables["bottom"])
+            self.retrieve_page_info()
             if self.redstar_ops.redstar_status():
-                self.loop_through_tables(current_month_rows, bottom_rows)
+                self.loop_through_tables()
 
-    def is_header_row(self, row):
-        return row.find("td", class_="th3") is not None
+    def retrieve_page_info(self):
+        self.prepaid_rent_amount = self.webdriver.get_number_from_string(
+            self.webdriver.return_element(
+                By.XPATH,
+                "/html/body/table[2]/tbody/tr[4]/td/table/tbody/tr/td/table[3]/tbody/tr[2]/td/table/tbody/tr[3]/td[5]",
+            )
+        )
+        self.current_url = self.webdriver.driver.current_url
+        self.current_month_rows = self.get_rows(self.tables["current_month"])
+        self.bottom_rows = self.get_rows(self.tables["bottom"])
 
     def get_rows(self, table_num):
         table = self.redstar_ops.define_table(table_num)
         rows = self.redstar_ops.get_rows(table)
         return rows
 
-    def loop_through_tables(self, current, bottom):
-        for row in current:
-            self.go_back()
+    def loop_through_tables(self):
+        for row in self.current_month_rows:
             if self.redstar_ops.redstar_status():
-                if self.is_header_row(row):
+                if self.redstar_ops.is_header_row(row):
                     continue
                 transaction, amount = self.redstar_ops.retrieve_transaction_and_amount(
                     row
                 )
-                self.allocate_all_credits(transaction, amount)
-                try:
-                    if self.bottom_amount_is_amount(bottom[1], amount):
-                        self.allocate_amount(transaction, amount)
-                except:
-                    pass
-
-    def bottom_amount_is_amount(self, row, amount):
-        bottom_amount = self.redstar_ops.retrieve_amount_from_bottom(row)
-        return amount == bottom_amount
-
-    def allocate_amount(self, transaction, amount):
-        number = amount[2:]
-        self.open_transaction(transaction)
-        self.webdriver.send_keys(
-            By.XPATH,
-            "/html/body/table[2]/tbody/tr[4]/td/table/tbody/tr/td/table[2]/tbody/tr[2]/td/table/tbody/tr[2]/td[2]/form/input[4]",
-            number,
-            enter=True,
-        )
-
-    def allocate_all_credits(self, transaction, amount):
-        if amount.startswith("(") or amount.endswith(")"):
-            self.open_transaction(transaction)
-            self.redstar_ops.auto_allocate()
-
-    def open_transaction(self, transaction):
-        self.webdriver.click(By.XPATH, f'//a[contains(text(), "{transaction}")]')
+                amount_num = self.webdriver.get_number_from_string(amount)
+                self.redstar_ops.bottom_ops(transaction, amount_num, self.bottom_rows)
+                self.redstar_ops.allocate_all_credits(transaction, amount)
+                if amount_num == self.prepaid_rent_amount:
+                    self.redstar_ops.open_transaction("Rental")
+                    self.redstar_ops.allocate_cents(amount_num)
+                self.go_back()
 
     def go_back(self):
         if not self.webdriver.check_webpage(self.current_url):

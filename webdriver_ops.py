@@ -7,6 +7,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import NoSuchElementException, NoSuchWindowException
 from selenium.webdriver.common.action_chains import ActionChains
+import re
 
 from config import username, password
 
@@ -25,6 +26,7 @@ class WebdriverOperations:
         if self.__initialized:
             return
         self.driver = self.setup_webdriver()
+        self.wait = WebDriverWait(self.driver, 10)
         self.__initialized = True
         self.primary_tab = None
         self.res_map_url = "https://kingsley.residentmap.com/index.php"
@@ -40,6 +42,16 @@ class WebdriverOperations:
             return False
         return True
 
+    def wait_for_page_to_load(self):
+        self.wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
+
+    def get_number_from_string(self, text):
+        match = re.search(r"\$\s*([\d\.]+)", text)
+        if match:
+            return float(match.group(1))
+        else:
+            return None
+
     def return_element(self, by, value):
         try:
             element = self.driver.find_element(by, value)
@@ -49,24 +61,42 @@ class WebdriverOperations:
 
     def send_keys(self, by, value, keys, enter=False):
         try:
-            input = self.driver.find_element(by, value)
-            input.clear()
-            input.send_keys(keys)
+            element = self.driver.find_element(by, value)
+            self.send_keys_element(element, keys, enter)
+        except NoSuchElementException:
+            pass
+
+    def send_keys_element(self, element, keys, enter=False):
+        try:
+            element.clear()
+            element.send_keys(keys)
             if enter:
-                input.send_keys(Keys.ENTER)
+                element.send_keys(Keys.ENTER)
         except NoSuchElementException:
             pass
 
     def click(self, by, value):
         try:
             element = self.driver.find_element(by, value)
-            is_clickable = element.is_displayed() and element.is_enabled()
-            actions = ActionChains(self.driver)
-            if element and is_clickable:
-                actions.move_to_element(element).perform()
+            self.click_element(element)
+        except NoSuchElementException:
+            pass
+
+    def click_element(self, element):
+        try:
+            if self.is_clickable(element):
+                self.scroll_to_element(element)
                 element.click()
         except NoSuchElementException:
             pass
+
+    def is_clickable(self, element):
+        is_clickable = element.is_displayed() and element.is_enabled()
+        return element and is_clickable == True
+
+    def scroll_to_element(self, element):
+        actions = ActionChains(self.driver)
+        actions.move_to_element(element).perform()
 
     def new_tab(self):
         self.driver.execute_script("window.open('about:blank', '_blank');")
@@ -87,7 +117,7 @@ class WebdriverOperations:
     def login(self, username, password):
         try:
             self.send_keys(By.NAME, "username", username)
-            self.send_keys(By.NAME, "password", password, enter=True)
+            self.send_keys(By.NAME, "password", password, True)
         except NoSuchElementException:
             pass
 
