@@ -1,6 +1,5 @@
 from selenium.webdriver.common.by import By
 from redstar_ops import RedstarOps
-import re
 
 
 class RunRedstar:
@@ -9,11 +8,6 @@ class RunRedstar:
         self.os_interact = os_interact
         self.csv_ops = csv_ops
         self.redstar_ops = RedstarOps(webdriver)
-        # self.prepaid_rent_amount = self.webdriver.return_element(
-        #     By.XPATH,
-        #     "/html/body/table[2]/tbody/tr[4]/td/table/tbody/tr/td/table[3]/tbody/tr[2]/td/table/tbody/tr[3]/td[5]",
-        # )
-        self.tables = {"previous_month": -5, "current_month": -4, "bottom": -1}
 
     def run_redstar(self):
         file_path = self.os_interact.retrieve_file("redstar_report")
@@ -23,42 +17,48 @@ class RunRedstar:
     def loop_through_ledgers(self, URLs):
         for URL in URLs:
             self.webdriver.driver.get(URL)
-            self.retrieve_page_info()
-            if self.redstar_ops.redstar_status():
+            (
+                self.prepaid_rent_amount,
+                self.current_url,
+                self.current_month_rows,
+                self.bottom_rows,
+            ) = self.redstar_ops.scrape_page()
+
+            if self.webdriver.element_status(By.XPATH, '//td//font[@color="red"]'):
                 self.loop_through_tables()
-
-    def retrieve_page_info(self):
-        self.prepaid_rent_amount = self.webdriver.get_number_from_string(
-            self.webdriver.return_element(
-                By.XPATH,
-                "/html/body/table[2]/tbody/tr[4]/td/table/tbody/tr/td/table[3]/tbody/tr[2]/td/table/tbody/tr[3]/td[5]",
-            )
-        )
-        self.current_url = self.webdriver.driver.current_url
-        self.current_month_rows = self.get_rows(self.tables["current_month"])
-        self.bottom_rows = self.get_rows(self.tables["bottom"])
-
-    def get_rows(self, table_num):
-        table = self.redstar_ops.define_table(table_num)
-        rows = self.redstar_ops.get_rows(table)
-        return rows
 
     def loop_through_tables(self):
         for row in self.current_month_rows:
-            if self.redstar_ops.redstar_status():
-                if self.redstar_ops.is_header_row(row):
+            if self.webdriver.element_status(By.XPATH, '//td//font[@color="red"]'):
+                if self.is_header_row(row):
                     continue
-                transaction, amount = self.redstar_ops.retrieve_transaction_and_amount(
-                    row
-                )
+                (
+                    transaction,
+                    amount,
+                ) = self.redstar_ops.retrieve_transaction_and_amount(row)
                 amount_num = self.webdriver.get_number_from_string(amount)
-                self.redstar_ops.bottom_ops(transaction, amount_num, self.bottom_rows)
-                self.redstar_ops.allocate_all_credits(transaction, amount)
-                if amount_num == self.prepaid_rent_amount:
-                    self.redstar_ops.open_transaction("Rental")
-                    self.redstar_ops.allocate_cents(amount_num)
+                self.bottom_ops(transaction, amount_num)
+                self.redstar_ops.allocate_cents(amount_num, self.prepaid_rent_amount)
                 self.go_back()
+        for row in self.current_month_rows:
+            self.redstar_ops.allocate_all_credits(
+                amount, self.redstar_ops.return_last_element(transaction)
+            )
+
+    def bottom_ops(self, transaction, amount):
+        for bottom_row in self.bottom_rows:
+            if self.is_header_row(bottom_row):
+                continue
+            self.redstar_ops.bottom_ops(transaction, amount, bottom_row)
+
+    def is_header_row(self, row):
+        return row.find("td", class_="th3") is not None
 
     def go_back(self):
         if not self.webdriver.check_webpage(self.current_url):
             self.webdriver.driver.back()
+
+            # self.redstar_ops.allocate_rule_compliance(
+            #     transaction,
+            #     self.redstar_ops.return_last_element("Rent"),
+            # )

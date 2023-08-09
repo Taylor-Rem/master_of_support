@@ -52,6 +52,16 @@ class WebdriverOperations:
         else:
             return None
 
+    def element_status(self, by, value):
+        try:
+            element = self.driver.find_element(
+                by,
+                value,
+            )
+            return True
+        except NoSuchElementException:
+            return False
+
     def return_element(self, by, value):
         try:
             element = self.driver.find_element(by, value)
@@ -76,11 +86,11 @@ class WebdriverOperations:
             pass
 
     def click(self, by, value):
-        try:
-            element = self.driver.find_element(by, value)
+        element = self.driver.find_element(by, value)
+        if element:
             self.click_element(element)
-        except NoSuchElementException:
-            pass
+        else:
+            raise NoSuchElementException(f"Element not found with {by} = {value}")
 
     def click_element(self, element):
         try:

@@ -16,10 +16,7 @@ class ResmapOperations:
         self.webdriver.send_keys(By.NAME, "search_input", unit + Keys.ENTER)
 
     def open_ledger(self):
-        self.webdriver.click(
-            By.XPATH,
-            "/html/body/table[2]/tbody/tr[4]/td/table/tbody/tr/td/table[3]/tbody/tr[2]/td/table/tbody/tr[last()]/td[4]/a[4]",
-        )
+        self.webdriver.click(By.XPATH, ".//a[text()='Ledger']")
 
     def search_resident(self, resident, num):
         self.webdriver.click(
@@ -42,12 +39,30 @@ class ResmapOperations:
         if self.compare_resident(resident) or resident is None:
             self.open_ledger()
         else:
-            self.search_resident_and_open_ledger(resident)
+            self.open_former_ledger(unit, resident)
 
     def search_resident_and_open_ledger(self, resident):
         try:
-            self.search_resident(resident, 2)
+            self.search_resident(resident, 1)
             self.open_ledger()
         except NoSuchElementException:
-            self.search_resident(resident, 1)
+            self.search_resident(resident, 2)
+            self.open_ledger()
+
+    def open_former_ledger(self, unit, resident):
+        try:
+            self.webdriver.click(By.XPATH, f".//a[text()='{unit}']")
+            self.webdriver.click(By.XPATH, ".//a[text()='List Former Residents']")
+        except NoSuchElementException:
+            self.search_resident_and_open_ledger(resident)
+
+    def click_last_ledger(self):
+        table = self.webdriver.driver.find_element(
+            By.XPATH,
+            "/html/body/table[2]/tbody/tr[4]/td/table/tbody/tr/td/table[2]/tbody/tr[2]/td/table/tbody",
+        )
+        ledger_links = table.find_elements(By.XPATH, ".//a[text()='Ledger']")
+        if ledger_links:
+            self.webdriver.click_element(ledger_links[-1])
+        else:
             self.open_ledger()
