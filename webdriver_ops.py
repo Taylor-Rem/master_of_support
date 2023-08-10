@@ -52,6 +52,16 @@ class WebdriverOperations:
         else:
             return None
 
+    def return_last_element(self, name):
+        try:
+            elements = self.driver.find_elements(By.XPATH, f'//a[text()="{name}"]')
+            if elements:
+                return elements[-1]
+            else:
+                return self.driver.find_element(By.XPATH, f'//a[text()="{name}"]')
+        except NoSuchElementException:
+            pass
+
     def element_status(self, by, value):
         try:
             element = self.driver.find_element(
@@ -94,9 +104,11 @@ class WebdriverOperations:
 
     def click_element(self, element):
         try:
-            if self.is_clickable(element):
+            if element is not None and self.is_clickable(element):
                 self.scroll_to_element(element)
                 element.click()
+            else:
+                pass
         except NoSuchElementException:
             pass
 
@@ -134,6 +146,10 @@ class WebdriverOperations:
     def open_program(self, site):
         self.driver.get(site)
         self.login(username, password)
+
+    def go_back(self, current_url):
+        if not self.check_webpage(current_url):
+            self.driver.back()
 
     def close(self):
         if self.driver:

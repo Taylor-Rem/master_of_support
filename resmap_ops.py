@@ -52,7 +52,11 @@ class ResmapOperations:
     def open_former_ledger(self, unit, resident):
         try:
             self.webdriver.click(By.XPATH, f".//a[text()='{unit}']")
-            self.webdriver.click(By.XPATH, ".//a[text()='List Former Residents']")
+            self.webdriver.click(
+                By.XPATH,
+                "/html/body/table[2]/tbody/tr[4]/td/table/tbody/tr/td/table[3]/tbody/tr[2]/td/table/tbody/tr[2]/td[5]/a",
+            )
+            self.click_last_ledger()
         except NoSuchElementException:
             self.search_resident_and_open_ledger(resident)
 

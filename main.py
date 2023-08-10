@@ -7,7 +7,6 @@ from PyQt5.QtWidgets import (
     QStackedWidget,
 )
 from os_interact import OSInteract
-from csv_ops import CsvOperations
 from webdriver_ops import WebdriverOperations
 from open_tickets import OpenTickets
 from redstar import RunRedstar
@@ -38,18 +37,19 @@ class App(QWidget):
     def init_classes(self):
         self.webdriver = WebdriverOperations()
         self.os_interact = OSInteract()
-        self.csv_ops = CsvOperations()
         self.scrape = Scrape(self.webdriver)
         self.resmap_ops = ResmapOperations(self.webdriver, self.scrape)
 
     def init_windows(self):
         self.init_main_window()
         self.ticket_helper = TicketHelper(self)
+        self.report_helper = ReportHelper(self)
         self.redstar = Redstar(self)
 
     def add_widgets(self):
         self.stack.addWidget(self.main_window)
         self.stack.addWidget(self.ticket_helper)
+        self.stack.addWidget(self.report_helper)
         self.stack.addWidget(self.redstar)
 
     def init_main_window(self):
@@ -71,7 +71,8 @@ class App(QWidget):
         self.webdriver.open_program(self.webdriver.manage_portal_url)
 
     def switch_to_report(self):
-        print("Report Master")
+        self.stack.setCurrentWidget(self.report_helper)
+        self.webdriver.open_program(self.webdriver.res_map_url)
 
     def switch_to_redstar(self):
         self.stack.setCurrentWidget(self.redstar)
@@ -116,12 +117,29 @@ class TicketHelper(HelperWidget):
         self.open_ticket.open_ticket()
 
 
+class ReportHelper(HelperWidget):
+    def __init__(self, main_app):
+        super().__init__(main_app, "Report Helper")
+        self.zero_btn = self.create_button(
+            "Zero Report", lambda: self.open_report("zero_report")
+        )
+        self.double_btn = self.create_button(
+            "Double Report", lambda: self.open_report("double_report")
+        )
+        self.moveout_btn = self.create_button(
+            "Moveout Report", lambda: self.open_report("moveout_report")
+        )
+        self.add_back_btn()
+        self.os_interact = OSInteract()
+
+    def open_report(self, report):
+        pass
+
+
 class Redstar(HelperWidget):
     def __init__(self, main_app):
         super().__init__(main_app, "Red Star")
-        self.redstar = RunRedstar(
-            main_app.webdriver, main_app.os_interact, main_app.csv_ops
-        )
+        self.redstar = RunRedstar(main_app.webdriver, main_app.os_interact)
         self.run_report = self.create_button("Run Report", self.run_report)
         self.add_back_btn()
 
