@@ -55,8 +55,8 @@ class CsvOperations:
         units = df.filter(like="Space Number").values.flatten().tolist()
         return [properties, units, report]
 
-    def get_url_columns(self):
-        df = pd.read_csv(self.root_path)
+    def get_url_columns(self, file_path):
+        df = pd.read_csv(file_path)
         return df.filter(like="URL").values.flatten().tolist()
 
 

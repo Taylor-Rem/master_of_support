@@ -1,6 +1,7 @@
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.common.exceptions import NoSuchElementException
+import time
 
 
 class ResmapOperations:
@@ -70,3 +71,21 @@ class ResmapOperations:
             self.webdriver.click_element(ledger_links[-1])
         else:
             self.open_ledger()
+
+
+class ManageportalOps:
+    def __init__(self, webdriver):
+        self.webdriver = webdriver
+
+    def resolve_ticket(self, icon, back):
+        self.webdriver.click(By.XPATH, "//button[contains(., 'Change Ticket Status')]")
+
+        self.click_button("button", icon)
+
+        if back:
+            self.click_button("a", back)
+
+    def click_button(self, element_type, icon):
+        xpath = f"//{element_type}[.//i[contains(@class, 'material-icons') and text()='{icon}']]"
+        self.webdriver.wait_click(By.XPATH, xpath)
+        self.webdriver.click(By.XPATH, xpath)

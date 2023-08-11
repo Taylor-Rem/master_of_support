@@ -42,8 +42,11 @@ class WebdriverOperations:
             return False
         return True
 
-    def wait_for_page_to_load(self):
+    def wait_page_load(self):
         self.wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
+
+    def wait_click(self, by, value):
+        self.wait.until(EC.element_to_be_clickable((by, value)))
 
     def get_number_from_string(self, text):
         match = re.search(r"\$\s*([\d\.]+)", text)

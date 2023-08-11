@@ -3,27 +3,25 @@ from PyQt5.QtWidgets import (
     QPushButton,
     QVBoxLayout,
     QWidget,
-    QLabel,
     QStackedWidget,
 )
 from os_interact import OSInteract
 from webdriver_ops import WebdriverOperations
-from open_tickets import OpenTickets
-from redstar import RunRedstar
+
 from scrape import Scrape
-from resmap_ops import ResmapOperations
+from webpage_ops import ResmapOperations, ManageportalOps
+from helper_windows import TicketOps, ChooseReport, ReportHelper, Redstar, TicketHelper
 
 
 class App(QWidget):
     def __init__(self):
         super().__init__()
-        # Create stacked widget
         self.stack = QStackedWidget()
 
-        # Init Classes
         self.init_classes()
-        # Init UI
         self.initUI()
+
+        self.previous_widgets = []
 
     def initUI(self):
         self.setWindowTitle("Support Deez")
@@ -39,112 +37,71 @@ class App(QWidget):
         self.os_interact = OSInteract()
         self.scrape = Scrape(self.webdriver)
         self.resmap_ops = ResmapOperations(self.webdriver, self.scrape)
+        self.manageportal_ops = ManageportalOps(self.webdriver)
 
     def init_windows(self):
-        self.init_main_window()
+        self.ticket_ops = TicketOps(self)
         self.ticket_helper = TicketHelper(self)
+        self.choose_report = ChooseReport(self)
         self.report_helper = ReportHelper(self)
         self.redstar = Redstar(self)
+        self.init_main_window()
 
     def add_widgets(self):
-        self.stack.addWidget(self.main_window)
-        self.stack.addWidget(self.ticket_helper)
-        self.stack.addWidget(self.report_helper)
-        self.stack.addWidget(self.redstar)
+        windows = [
+            self.main_window,
+            self.ticket_helper,
+            self.ticket_ops,
+            self.choose_report,
+            self.redstar,
+            self.report_helper,
+        ]
+        for window in windows:
+            self.stack.addWidget(window)
 
     def init_main_window(self):
         self.main_window = QWidget()
         main_layout = QVBoxLayout()
         self.main_window.setLayout(main_layout)
-        self.create_button("Ticket Master", self.switch_to_ticket, main_layout)
-        self.create_button("Choose Report", self.switch_to_report, main_layout)
-        self.create_button("Redstar Master", self.switch_to_redstar, main_layout)
-        self.create_button("Quit App", self.quit_app, main_layout)
+
+        button_configs = [
+            {
+                "name": "Ticket Master",
+                "method": lambda: self.switch_window(
+                    self.ticket_helper, self.webdriver.manage_portal_url
+                ),
+            },
+            {
+                "name": "Choose Report",
+                "method": lambda: self.switch_window(
+                    self.choose_report, self.webdriver.res_map_url
+                ),
+            },
+            {
+                "name": "Redstar Master",
+                "method": lambda: self.switch_window(
+                    self.redstar, self.webdriver.res_map_url
+                ),
+            },
+        ]
+
+        for config in button_configs:
+            self.create_button(config["name"], config["method"], main_layout)
 
     def create_button(self, text, callback, layout):
         button = QPushButton(text, self)
         button.clicked.connect(callback)
         layout.addWidget(button)
 
-    def switch_to_ticket(self):
-        self.stack.setCurrentWidget(self.ticket_helper)
-        self.webdriver.open_program(self.webdriver.manage_portal_url)
-
-    def switch_to_report(self):
-        self.stack.setCurrentWidget(self.report_helper)
-        self.webdriver.open_program(self.webdriver.res_map_url)
-
-    def switch_to_redstar(self):
-        self.stack.setCurrentWidget(self.redstar)
-        self.webdriver.open_program(self.webdriver.res_map_url)
+    def switch_window(self, window, open_program=None):
+        self.previous_widgets.append(self.stack.currentWidget())
+        self.stack.setCurrentWidget(window)
+        if open_program:
+            self.webdriver.switch_to_primary_tab()
+            self.webdriver.open_program(open_program)
 
     def quit_app(self):
         self.close()
-
-
-class HelperWidget(QWidget):
-    def __init__(self, main_app, title):
-        super().__init__()
-        self.main_app = main_app
-        self.setWindowTitle(title)
-        self.layout = QVBoxLayout()
-        self.setLayout(self.layout)
-        self.label = QLabel(title, self)
-
-    def create_button(self, text, callback):
-        button = QPushButton(text, self)
-        button.clicked.connect(callback)
-        self.layout.addWidget(button)
-        return button
-
-    def go_back(self):
-        self.main_app.stack.setCurrentWidget(self.main_app.main_window)
-
-    def add_back_btn(self):
-        self.back_btn = self.create_button("Back", self.go_back)
-
-
-class TicketHelper(HelperWidget):
-    def __init__(self, main_app):
-        super().__init__(main_app, "Ticket Helper")
-        self.open_btn = self.create_button("Open Ticket", self.open_ticket)
-        self.add_back_btn()
-        self.open_ticket = OpenTickets(
-            main_app.webdriver, main_app.scrape, main_app.resmap_ops
-        )
-
-    def open_ticket(self):
-        self.open_ticket.open_ticket()
-
-
-class ReportHelper(HelperWidget):
-    def __init__(self, main_app):
-        super().__init__(main_app, "Report Helper")
-        self.zero_btn = self.create_button(
-            "Zero Report", lambda: self.open_report("zero_report")
-        )
-        self.double_btn = self.create_button(
-            "Double Report", lambda: self.open_report("double_report")
-        )
-        self.moveout_btn = self.create_button(
-            "Moveout Report", lambda: self.open_report("moveout_report")
-        )
-        self.add_back_btn()
-        self.os_interact = OSInteract()
-
-    def open_report(self, report):
-        pass
-
-
-class Redstar(HelperWidget):
-    def __init__(self, main_app):
-        super().__init__(main_app, "Red Star")
-        self.redstar = RunRedstar(main_app.webdriver, main_app.os_interact)
-        self.run_report = self.create_button("Run Report", self.run_report)
-        self.add_back_btn()
-
-    def run_report(self):
-        self.redstar.run_redstar()
 
 
 if __name__ == "__main__":
@@ -156,7 +113,11 @@ if __name__ == "__main__":
         main_app.show()
         app.exec_()
     except Exception as e:
-        print(f"An error occured: {e}")
+        # Capture the traceback for better error diagnostics.
+        import traceback
+
+        print("An error occurred:", e)
+        traceback.print_exc()
     finally:
-        if main_app and main_app.webdriver:
+        if main_app and hasattr(main_app, "webdriver"):
             main_app.webdriver.close()
