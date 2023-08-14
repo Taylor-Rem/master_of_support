@@ -17,11 +17,10 @@ class App(QWidget):
     def __init__(self):
         super().__init__()
         self.stack = QStackedWidget()
+        self.previous_widgets = []
 
         self.init_classes()
         self.initUI()
-
-        self.previous_widgets = []
 
     def initUI(self):
         self.setWindowTitle("Support Deez")
@@ -42,7 +41,7 @@ class App(QWidget):
     def init_windows(self):
         self.ticket_ops = TicketOps(self)
         self.ticket_helper = TicketHelper(self)
-        self.choose_report = ChooseReport(self)
+        self.choose_report = ChooseReport(self, self.os_interact)
         self.report_helper = ReportHelper(self)
         self.redstar = Redstar(self)
         self.init_main_window()

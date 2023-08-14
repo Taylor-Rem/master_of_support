@@ -55,6 +55,12 @@ class WebdriverOperations:
         else:
             return None
 
+    def return_elements(self, name):
+        try:
+            elements = self.driver.find_elements(By.XPATH, f'//a[text()="{name}"]')
+        except:
+            return None
+
     def return_last_element(self, name):
         try:
             elements = self.driver.find_elements(By.XPATH, f'//a[text()="{name}"]')
