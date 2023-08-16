@@ -15,9 +15,9 @@ class FilterLedgers:
         current_report_items = []
         for i in range(len(properties)):
             property = properties[i]
-            unit = units[i]
+            unit = float(units[i])
             resident = residents[i]
-            json_entry = f"{property}_{str(unit)}_{resident}"
+            json_entry = f"{property}_{unit}_{resident}"
             current_report_items.append(json_entry)
         return current_report_items
 
@@ -31,6 +31,6 @@ class FilterLedgers:
         for item in unique_elements:
             prop, unit, res = item.split("_")
             properties.append(prop)
-            units.append(unit)
+            units.append(float(unit))
             residents.append(res)
         return properties, units, residents

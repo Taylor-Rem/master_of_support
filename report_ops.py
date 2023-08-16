@@ -18,10 +18,10 @@ class ReportOperations:
 
     def open_ledger(self):
         self.property = self.properties[self.current_index]
-        self.unit = self.units[self.current_index]
+        self.unit = int(self.units[self.current_index])
         self.resident = self.residents[self.current_index]
         print(self.property, self.unit, self.resident)
-        self.resmap_ops.open_ledger(self.property, self.unit, self.resident)
+        self.resmap_ops.open_ledger(self.property, str(self.unit), self.resident)
 
     def next_ledger(self):
         self.current_index += 1
@@ -31,10 +31,13 @@ class ReportOperations:
         self.add_to_json()
         self.next_ledger()
 
+    def go_to_former(self):
+        self.resmap_ops.open_former_ledger(self.unit, self.resident)
+
     def skip_button(self):
         self.next_ledger()
 
     def add_to_json(self):
-        json_entry = f"{self.property}_{str(self.unit)}_{self.resident}"
+        json_entry = f"{self.property}_{self.unit}_{self.resident}"
         self.temp_storage.append(json_entry)
         self.json_ops.write_json(self.temp_storage)

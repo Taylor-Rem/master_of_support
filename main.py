@@ -8,7 +8,6 @@ from PyQt5.QtWidgets import (
 from os_interact import OSInteract
 from webdriver_ops import WebdriverOperations
 
-from scrape import Scrape
 from webpage_ops import ResmapOperations, ManageportalOps
 from helper_windows import TicketOps, ChooseReport, ReportHelper, Redstar, TicketHelper
 
@@ -34,8 +33,7 @@ class App(QWidget):
     def init_classes(self):
         self.webdriver = WebdriverOperations()
         self.os_interact = OSInteract()
-        self.scrape = Scrape(self.webdriver)
-        self.resmap_ops = ResmapOperations(self.webdriver, self.scrape)
+        self.resmap_ops = ResmapOperations(self.webdriver)
         self.manageportal_ops = ManageportalOps(self.webdriver)
 
     def init_windows(self):

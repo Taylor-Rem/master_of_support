@@ -1,8 +1,9 @@
 from PyQt5.QtWidgets import QPushButton, QVBoxLayout, QWidget, QLabel
-
+from PyQt5.QtWidgets import QInputDialog, QMessageBox
 from tickets import OpenTickets, TicketLedgerOps
 from redstar import RunRedstar
 from report_ops import ReportOperations
+from functools import partial
 
 
 class HelperWidget(QWidget):
@@ -10,9 +11,15 @@ class HelperWidget(QWidget):
         super().__init__()
         self.main_app = main_app
         self.setWindowTitle(title)
+
         self.layout = QVBoxLayout()
         self.setLayout(self.layout)
+
         self.label = QLabel(title, self)
+        self.layout.addWidget(self.label)
+
+        self.button_layout = QVBoxLayout()
+        self.layout.addLayout(self.button_layout)
 
     def create_button(self, text, callback):
         button = QPushButton(text, self)
@@ -44,17 +51,15 @@ class TicketHelper(HelperWidget):
         self.open_btn = self.create_button("🤖 Open Ticket", self.open_ticket)
         self.in_progress_btn = self.create_button(
             "🔵 In Progress",
-            lambda: self.change_ticket_status(
-                self.icons["In Progress"], self.icons["Back"]
+            lambda: (
+                self.change_ticket_status(self.icons["In Progress"], self.icons["Back"])
             ),
         )
         self.resolve_btn = self.create_button(
-            "✅ Resolve", lambda: self.change_ticket_status(self.icons["Resolved"])
+            "✅ Resolve", lambda: (self.change_ticket_status(self.icons["Resolved"]))
         )
         self.add_back_btn()
-        self.open_ticket_op = OpenTickets(
-            main_app.webdriver, main_app.scrape, main_app.resmap_ops
-        )
+        self.open_ticket_op = OpenTickets(main_app.webdriver, main_app.resmap_ops)
         self.ticket_ledger_ops = TicketLedgerOps(
             main_app.webdriver, main_app.resmap_ops
         )
@@ -73,32 +78,49 @@ class TicketOps(HelperWidget):
         self.ticket_ledger_ops = TicketLedgerOps(
             main_app.webdriver, main_app.resmap_ops
         )
-        self.credit_all_charges_btn = self.create_button(
-            "Credit All Charges", self.credit_all_charges
+        self.allocate_all_btn = self.create_button(
+            "Allocate All", partial(self.click_button, "allocate_all")
         )
-        self.delete_late_fees_btn = self.create_button(
-            "Delete Late Fees", self.delete_late_fees
+        self.credit_all_charges_btn = self.create_button(
+            "Credit All Charges", partial(self.click_button, "credit_all_charges")
+        )
+        self.delete_all_charges_btn = self.create_button(
+            "Delete All Charges", partial(self.click_button, "delete_all_charges")
+        )
+        self.delete_all_late_fees_btn = self.create_button(
+            "Delete All Late Fees", partial(self.click_button, "delete_all_late_fees")
         )
         self.add_back_btn()
 
-    def credit_all_charges(self):
-        self.ticket_ledger_ops.credit_all_charges()
-
-    def delete_late_fees(self):
-        self.ticket_ledger_ops.delete_all_late_fees()
+    def click_button(self, operation):
+        if operation == "credit_all_charges":
+            items = ["Concession", "Credit"]
+            item, ok = QInputDialog.getItem(
+                self, "Choose credit type", "Type:", items, 0, False
+            )
+            if ok and item:
+                is_concession = item == "Concession"
+                self.ticket_ledger_ops.loop(operation, is_concession)
+            else:
+                QMessageBox.information(
+                    self, "Operation canceled", "Credit operation was canceled."
+                )
+                return
+        else:
+            self.ticket_ledger_ops.loop(operation)
 
 
 class ChooseReport(HelperWidget):
     def __init__(self, main_app, os_interact):
         super().__init__(main_app, "Choose Report")
         self.zero_btn = self.create_button(
-            "Zero Report", lambda: self.open_report("zero_report")
+            "Zero Report", lambda: (self.open_report("zero_report"))
         )
         self.double_btn = self.create_button(
-            "Double Report", lambda: self.open_report("double_report")
+            "Double Report", lambda: (self.open_report("double_report"))
         )
         self.moveout_btn = self.create_button(
-            "Moveout Report", lambda: self.open_report("moveout_report")
+            "Moveout Report", lambda: (self.open_report("moveout_report"))
         )
         self.add_back_btn()
         self.os_interact = os_interact
@@ -108,7 +130,7 @@ class ChooseReport(HelperWidget):
             report_ops = ReportOperations(
                 self.main_app.webdriver, self.main_app.resmap_ops, report
             )
-            report_helper_window = ReportHelper(self.main_app, report_ops)
+            report_helper_window = ReportHelper(self.main_app, report_ops, report)
             self.main_app.stack.addWidget(report_helper_window)
             self.main_app.switch_window(report_helper_window)
         except:
@@ -116,22 +138,30 @@ class ChooseReport(HelperWidget):
 
 
 class ReportHelper(HelperWidget):
-    def __init__(self, main_app, report_ops=None):
+    def __init__(self, main_app, report_ops=None, report="_"):
         self.report_ops = report_ops
-        super().__init__(main_app, "Report Helper")
+        super().__init__(main_app, report.replace("_", " "))
         self.complete_btn = self.create_button("Add", self.add_report)
         self.skip_btn = self.create_button("Skip", self.skip_report)
+        self.go_to_former_btn = self.create_button("Go to Former", self.go_to_former)
         self.add_back_btn()
 
     def add_report(self):
         try:
             self.report_ops.add_button()
         except:
-            self.main_app.switch_window(self.main_app.choose_report)
+            self.main_app.stack.setCurrentWidget(self.main_app.choose_report)
             print("Report Complete!")
 
     def skip_report(self):
-        self.report_ops.skip_button()
+        try:
+            self.report_ops.skip_button()
+        except:
+            self.main_app.stack.setCurrentWidget(self.main_app.choose_report)
+            print("Report Complete!")
+
+    def go_to_former(self):
+        self.report_ops.go_to_former()
 
 
 class Redstar(HelperWidget):

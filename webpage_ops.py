@@ -1,19 +1,25 @@
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.common.exceptions import NoSuchElementException
-from bs4 import BeautifulSoup
+from selenium.webdriver.support.ui import Select
+from transaction_ops import TransactionOps
+from resmap_scrape import ResmapScrape
 
 
 class ResmapOperations:
-    def __init__(self, webdriver, scrape):
+    def __init__(self, webdriver):
         self.webdriver = webdriver
-        self.scrape = scrape
-        self.tables = {"previous_month": -5, "current_month": -4, "bottom": -1}
+        self.scrape = ResmapScrape(webdriver)
+        self.transaction_ops = TransactionOps(webdriver)
 
     def open_ledger(self, property, unit, resident):
         self.open_property(property)
         if unit is not None:
             self.open_unit_and_ledger(unit, resident)
+
+    def get_rows(self, by, value):
+        table = self.scrape.define_table(by, value)
+        return self.scrape.get_rows(table)
 
     def open_property(self, property):
         self.webdriver.click(By.XPATH, "//a[contains(., 'CHANGE PROPERTY')]")
@@ -40,6 +46,12 @@ class ResmapOperations:
             else:
                 return False
         return False
+
+    def delete_charges(self, transaction):
+        self.webdriver.click_element(self.webdriver.return_last_element(transaction))
+        self.webdriver.click(By.NAME, transaction)
+        alert = self.webdriver.driver.switch_to.alert
+        alert.accept()
 
     def open_unit_and_ledger(self, unit, resident):
         self.open_unit(unit)
@@ -81,33 +93,40 @@ class ResmapOperations:
         else:
             self.click_ledger()
 
-    def is_header_row(self, row):
-        return row.find("td", class_="th3") is not None
+    def is_header_row(self, row, class_name):
+        return row.find("td", class_=class_name) is not None
 
-    def choose_table(self, num):
-        return f"/html/body/table[2]/tbody/tr[4]/td/table/tbody/tr/td/table[last(){num}]/tbody/tr[2]/td/table/tbody"
+    def allocate_all_credits(self, amount, element):
+        if amount.startswith("(") or amount.endswith(")"):
+            self.webdriver.click_element(element)
+            self.transaction_ops.auto_allocate()
 
-    def define_table(self, table_num):
-        table_elements = self.webdriver.driver.find_elements(
-            By.XPATH, self.choose_table(table_num)
+    def credit_all_charges(self, is_concession=False):
+        self.webdriver.click_element(self.webdriver.return_last_element("Add Credit"))
+        rows = self.get_rows(By.XPATH, "//tr[contains(@class, 'td')]")
+        row = rows[-1]
+        columns = row.find_all("td")
+        name = columns[0].text.strip()
+        bill_amount_str = columns[2].text.strip()
+        bill_amount_replace = bill_amount_str.replace("$", "").replace(" ", "")
+        bill_amount = float(bill_amount_replace)
+        select_element = self.webdriver.driver.find_element(
+            By.XPATH, "//select[@name='ttid']"
         )
-        table = table_elements[0] if table_elements else None
-        return table
-
-    def get_rows(self, table_num):
-        table = self.define_table(table_num)
-        if table:
-            soup = BeautifulSoup(table.get_attribute("innerHTML"), "html.parser")
-            rows = soup.find_all("tr")
-            return rows
+        select = Select(select_element)
+        if (name == "Rent" or "Home Rental") and is_concession:
+            select.select_by_visible_text(f"{name} Concession")
         else:
-            return None
-
-    def retrieve_transaction_and_amount(self, row):
-        cells = row.find_all("td")
-        transaction = cells[2].get_text(strip=True)
-        amount = cells[3].get_text(strip=True)
-        return transaction, amount
+            select.select_by_visible_text(name)
+        credit_input = self.webdriver.driver.find_element(
+            By.XPATH, "//input[@type='text' and @name='amount']"
+        )
+        self.webdriver.send_keys_element(credit_input, bill_amount)
+        comments = self.webdriver.driver.find_element(
+            By.XPATH, "//textarea[@name='comments']"
+        )
+        self.webdriver.send_keys_element(comments, "charge concession")
+        self.webdriver.click(By.XPATH, "//input[@type='submit' and @name='submit1']")
 
 
 class ManageportalOps:

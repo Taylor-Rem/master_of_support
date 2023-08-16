@@ -22,7 +22,7 @@ class RunRedstar:
                 self.current_url,
                 self.current_month_rows,
                 self.bottom_rows,
-            ) = self.redstar_ops.scrape_page()
+            ) = self.resmap_ops.scrape.scrape_page()
             self.rule_compliance = False
             if self.webdriver.element_status(By.XPATH, '//td//font[@color="red"]'):
                 self.loop_through_tables()
@@ -30,12 +30,12 @@ class RunRedstar:
     def loop_through_tables(self):
         # First loop to check Elements
         for row in self.current_month_rows:
-            if self.resmap_ops.is_header_row(row):
+            if self.resmap_ops.is_header_row(row, "th3"):
                 continue
             (
                 transaction,
                 amount,
-            ) = self.resmap_ops.retrieve_transaction_and_amount(row)
+            ) = self.resmap_ops.scrape.retrieve_transaction_and_amount(row)
             if "RULE COMPLIANCE CREDIT" in transaction:
                 self.rule_compliance = True
                 self.rule_compliance_amount = amount
@@ -48,11 +48,12 @@ class RunRedstar:
         # Second loop to perform all actions
         for row in self.current_month_rows:
             if self.webdriver.element_status(By.XPATH, '//td//font[@color="red"]'):
-                if self.resmap_ops.is_header_row(row):
+                if self.resmap_ops.is_header_row(row, "th3"):
                     continue
-                transaction, amount = self.resmap_ops.retrieve_transaction_and_amount(
-                    row
-                )
+                (
+                    transaction,
+                    amount,
+                ) = self.resmap_ops.scrape.retrieve_transaction_and_amount(row)
                 amount_num = self.webdriver.get_number_from_string(amount)
                 self.bottom_ops(transaction, amount_num)
                 self.redstar_ops.allocate_cents(amount_num, self.prepaid_rent_amount)
@@ -60,18 +61,18 @@ class RunRedstar:
 
         # Third loop to allocate all credits
         for row in self.current_month_rows:
-            if self.resmap_ops.is_header_row(row):
+            if self.resmap_ops.is_header_row(row, "th3"):
                 continue
             (
                 transaction,
                 amount,
-            ) = self.resmap_ops.retrieve_transaction_and_amount(row)
-            self.redstar_ops.allocate_all_credits(
+            ) = self.resmap_ops.scrape.retrieve_transaction_and_amount(row)
+            self.resmap_ops.allocate_all_credits(
                 amount, self.webdriver.return_last_element(transaction)
             )
 
     def bottom_ops(self, transaction, amount):
         for bottom_row in self.bottom_rows:
-            if self.resmap_ops.is_header_row(bottom_row):
+            if self.resmap_ops.is_header_row(bottom_row, "th3"):
                 continue
             self.redstar_ops.bottom_ops(transaction, amount, bottom_row)

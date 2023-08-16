@@ -1,10 +1,20 @@
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException
+from transaction_scrape import TransactionScrape
 
 
 class TransactionOps:
     def __init__(self, webdriver):
         self.webdriver = webdriver
+        self.scrape = TransactionScrape(webdriver)
+
+    def scrape_page(self):
+        (
+            self.full_charge,
+            self.top_allocation_element,
+            self.top_allocation_value,
+            self.additional_rent_element,
+        ) = self.scrape.scrape_transaction()
 
     def auto_allocate(self):
         try:
@@ -14,7 +24,7 @@ class TransactionOps:
             pass
 
     def allocate_cents(self, amount):
-        self.scrape_transaction()
+        self.scrape_page()
         try:
             if self.charge_equals_top_value():
                 self.subtract_current_allocation(
@@ -41,39 +51,9 @@ class TransactionOps:
         )
 
     def subtract_compliance_from_rent(self, compliance_amount):
-        self.scrape_transaction()
+        self.scrape_page()
         if self.charge_equals_top_value():
             self.subtract_current_allocation(compliance_amount)
-
-    def allocation_elements(self, num):
-        try:
-            return self.webdriver.driver.find_element(
-                By.XPATH,
-                f"/html/body/table[2]/tbody/tr[4]/td/table/tbody/tr/td/table[2]/tbody/tr[2]/td/table/tbody/tr[{num}]/td[2]/form/input[4]",
-            )
-        except NoSuchElementException:
-            return False
-
-    def scrape_transaction(self):
-        try:
-            self.full_charge = float(
-                self.webdriver.driver.find_element(
-                    By.XPATH,
-                    "/html/body/table[2]/tbody/tr[4]/td/table/tbody/tr/td/form/table/tbody/tr[2]/td/table/tbody/tr[2]/td[2]/input",
-                ).get_attribute("value")
-            )
-        except NoSuchElementException:
-            self.full_charge = float(
-                self.webdriver.driver.find_element(
-                    By.XPATH,
-                    "/html/body/table[2]/tbody/tr[4]/td/table/tbody/tr/td/form/table[1]/tbody/tr[2]/td/table/tbody/tr[4]/td[2]/input",
-                ).get_attribute("value")
-            )
-        self.top_allocation_element = self.allocation_elements(2)
-        self.top_allocation_value = float(
-            self.top_allocation_element.get_attribute("value")
-        )
-        self.additional_rent_element = self.allocation_elements(3)
 
     def allocate_amount(self, amount):
         self.webdriver.send_keys(

@@ -63,11 +63,13 @@ class WebdriverOperations:
 
     def return_last_element(self, name):
         try:
-            elements = self.driver.find_elements(By.XPATH, f'//a[text()="{name}"]')
+            elements = self.driver.find_elements(
+                By.XPATH, f"//a[contains(., '{name}')]"
+            )
             if elements:
                 return elements[-1]
             else:
-                return self.driver.find_element(By.XPATH, f'//a[text()="{name}"]')
+                return self.driver.find_element(By.XPATH, f"//a[contains(., '{name}')]")
         except NoSuchElementException:
             pass
 

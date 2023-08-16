@@ -121,7 +121,6 @@ class PdfOperations:
         properties = pdf_text[0::2]
         units = numbers[0::2]
         residents = pdf_text[1::2]
-
         return properties, units, residents
 
     def extract_text_and_links(self, page):
