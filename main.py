@@ -9,7 +9,14 @@ from os_interact import OSInteract
 from webdriver_ops import WebdriverOperations
 
 from webpage_ops import ResmapOperations, ManageportalOps
-from helper_windows import TicketOps, ChooseReport, ReportHelper, Redstar, TicketHelper
+
+from frontend_subclasses import (
+    TicketHelper,
+    TicketOps,
+    ChooseReport,
+    ReportHelper,
+    Redstar,
+)
 
 
 class App(QWidget):
@@ -37,9 +44,9 @@ class App(QWidget):
         self.manageportal_ops = ManageportalOps(self.webdriver)
 
     def init_windows(self):
-        self.ticket_ops = TicketOps(self)
         self.ticket_helper = TicketHelper(self)
-        self.choose_report = ChooseReport(self, self.os_interact)
+        self.ticket_ops = TicketOps(self)
+        self.choose_report = ChooseReport(self)
         self.report_helper = ReportHelper(self)
         self.redstar = Redstar(self)
         self.init_main_window()
@@ -50,8 +57,8 @@ class App(QWidget):
             self.ticket_helper,
             self.ticket_ops,
             self.choose_report,
-            self.redstar,
             self.report_helper,
+            self.redstar,
         ]
         for window in windows:
             self.stack.addWidget(window)

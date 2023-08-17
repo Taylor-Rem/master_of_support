@@ -28,8 +28,11 @@ class ResmapOperations:
     def open_unit(self, unit):
         self.webdriver.send_keys(By.NAME, "search_input", unit + Keys.ENTER)
 
-    def click_ledger(self):
-        self.webdriver.click(By.XPATH, ".//a[text()='Ledger']")
+    def click_ledger(self, unit=None, resident=None):
+        try:
+            self.webdriver.click(By.XPATH, ".//a[text()='Ledger']")
+        except NoSuchElementException:
+            self.open_former_ledger(unit, resident)
 
     def search_resident(self, resident, num):
         self.webdriver.click(
@@ -47,16 +50,10 @@ class ResmapOperations:
                 return False
         return False
 
-    def delete_charges(self, transaction):
-        self.webdriver.click_element(self.webdriver.return_last_element(transaction))
-        self.webdriver.click(By.NAME, transaction)
-        alert = self.webdriver.driver.switch_to.alert
-        alert.accept()
-
     def open_unit_and_ledger(self, unit, resident):
         self.open_unit(unit)
         if self.compare_resident(resident) or resident is None:
-            self.click_ledger()
+            self.click_ledger(unit, resident)
         else:
             self.open_former_ledger(unit, resident)
 
@@ -95,38 +92,6 @@ class ResmapOperations:
 
     def is_header_row(self, row, class_name):
         return row.find("td", class_=class_name) is not None
-
-    def allocate_all_credits(self, amount, element):
-        if amount.startswith("(") or amount.endswith(")"):
-            self.webdriver.click_element(element)
-            self.transaction_ops.auto_allocate()
-
-    def credit_all_charges(self, is_concession=False):
-        self.webdriver.click_element(self.webdriver.return_last_element("Add Credit"))
-        rows = self.get_rows(By.XPATH, "//tr[contains(@class, 'td')]")
-        row = rows[-1]
-        columns = row.find_all("td")
-        name = columns[0].text.strip()
-        bill_amount_str = columns[2].text.strip()
-        bill_amount_replace = bill_amount_str.replace("$", "").replace(" ", "")
-        bill_amount = float(bill_amount_replace)
-        select_element = self.webdriver.driver.find_element(
-            By.XPATH, "//select[@name='ttid']"
-        )
-        select = Select(select_element)
-        if (name == "Rent" or "Home Rental") and is_concession:
-            select.select_by_visible_text(f"{name} Concession")
-        else:
-            select.select_by_visible_text(name)
-        credit_input = self.webdriver.driver.find_element(
-            By.XPATH, "//input[@type='text' and @name='amount']"
-        )
-        self.webdriver.send_keys_element(credit_input, bill_amount)
-        comments = self.webdriver.driver.find_element(
-            By.XPATH, "//textarea[@name='comments']"
-        )
-        self.webdriver.send_keys_element(comments, "charge concession")
-        self.webdriver.click(By.XPATH, "//input[@type='submit' and @name='submit1']")
 
 
 class ManageportalOps:
