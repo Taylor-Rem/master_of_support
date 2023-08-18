@@ -12,20 +12,23 @@ class ResmapScrape:
     def scrape_ticket(self):
         try:
             property = self.webdriver.return_element(
-                By.XPATH, "//tbody/tr[td[contains(., 'Property')]]/td[2]/a"
+                By.XPATH,
+                "//tr/td[@class='text-xs-right' and contains(text(), 'Property')]/following-sibling::td[@class='text-xs-left']/strong/a",
             )
         except NoSuchElementException:
             property = None
 
         try:
             unit = self.webdriver.return_element(
-                By.XPATH, "//tbody/tr[td[contains(., 'Space')]]/td[2]/a"
+                By.XPATH,
+                "//tr/td[@class='text-xs-right' and contains(text(), 'Space')]/following-sibling::td[@class='text-xs-left']/a/strong",
             )
         except NoSuchElementException:
             unit = None
         try:
             resident = self.webdriver.return_element(
-                By.XPATH, "//tbody/tr[td[contains(., 'Resident')]]/td[2]/a"
+                By.XPATH,
+                "//tr/td[@class='text-xs-right' and contains(text(), 'Resident')]/following-sibling::td[@class='text-xs-left']/a/strong",
             )
         except NoSuchElementException:
             resident = None
@@ -48,9 +51,6 @@ class ResmapScrape:
         amount = cells[3].get_text(strip=True)
         return transaction, amount
 
-    def choose_table(self, num):
-        return f"/html/body/table[2]/tbody/tr[4]/td/table/tbody/tr/td/table[last(){num}]/tbody/tr[2]/td/table/tbody"
-
     def scrape_page(self):
         prepaid_rent_amount = self.webdriver.get_number_from_string(
             self.webdriver.return_element(
@@ -59,18 +59,13 @@ class ResmapScrape:
             )
         )
         current_url = self.webdriver.driver.current_url
-        current_month_rows = self.get_table("current_month")
-        bottom_rows = self.get_table("bottom")
-        return prepaid_rent_amount, current_url, current_month_rows, bottom_rows
+        return prepaid_rent_amount, current_url
 
-    def get_table(self, value):
-        return self.get_rows(
-            self.define_table(By.XPATH, self.choose_table(self.tables[value]))
-        )
+    def choose_table(self, num):
+        return f"/html/body/table[2]/tbody/tr[4]/td/table/tbody/tr/td/table[last(){num}]/tbody/tr[2]/td/table/tbody"
 
     def define_table(self, by, value):
         table_elements = self.webdriver.driver.find_elements(by, value)
-        # table = table_elements[0] if table_elements else None
         table = [element.get_attribute("outerHTML") for element in table_elements]
         return table
 

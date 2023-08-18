@@ -1,8 +1,8 @@
-from redstar import RunRedstar
-from report_ops import ReportOperations
-from tickets import OpenTickets
+from .helper_windows import HelperWidget, LedgerOps
 
-from helper_windows import HelperWidget, LedgerOps
+from general_tools.tickets import OpenTickets
+from general_tools.report_ops import ReportOperations
+from general_tools.redstar import Redstar
 
 
 class TicketHelper(HelperWidget):
@@ -95,14 +95,34 @@ class ReportHelper(LedgerOps):
         self.report_ops.go_to_former()
 
 
-class Redstar(HelperWidget):
+class RedstarWindow(HelperWidget):
     def __init__(self, main_app):
         super().__init__(main_app, "Red Star")
-        self.redstar = RunRedstar(
-            main_app.webdriver, main_app.os_interact, main_app.resmap_ops
+        self.redstar_helper_btn = self.create_button(
+            "Redstar Helper", self.redstar_helper
         )
         self.run_report_btn = self.create_button("Run Report", self.run_report)
         self.add_back_btn()
 
+    def redstar_helper(self):
+        self.redstar.redstar_ops.open_ledger()
+        self.main_app.switch_window(self.main_app.redstar_helper)
+
     def run_report(self):
-        self.redstar.run_redstar()
+        self.redstar.auto_redstar.loop_through_ledgers()
+
+
+class RedstarHelper(LedgerOps):
+    def __init__(self, main_app):
+        super().__init__(main_app, "Red Star Helper")
+        self.redstar = self.main_app.redstar
+        self.next_ledger_btn = self.create_button(
+            "Next Ledger", lambda: self.cycle_ledger(True)
+        )
+        self.prev_ledger_btn = self.create_button(
+            "Prev Ledger", lambda: self.cycle_ledger(False)
+        )
+        self.create_ledger_buttons()
+
+    def cycle_ledger(self, next):
+        self.redstar.redstar_ops.cycle_ledger(next)

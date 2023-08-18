@@ -1,4 +1,4 @@
-from webpage_ops import ManageportalOps
+from resmap_tools.webpage_ops import ManageportalOps
 
 
 class OpenTickets:

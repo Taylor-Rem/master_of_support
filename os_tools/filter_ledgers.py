@@ -1,4 +1,4 @@
-from os_interact import OSInteract, JsonOperations
+from os_tools.os_interact import OSInteract, JsonOperations
 
 
 class FilterLedgers:

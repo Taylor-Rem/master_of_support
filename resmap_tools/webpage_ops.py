@@ -1,9 +1,8 @@
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.common.exceptions import NoSuchElementException
-from selenium.webdriver.support.ui import Select
-from transaction_ops import TransactionOps
-from resmap_scrape import ResmapScrape
+from ledger_tools.transaction_ops import TransactionOps
+from resmap_tools.resmap_scrape import ResmapScrape
 
 
 class ResmapOperations:
@@ -16,10 +15,6 @@ class ResmapOperations:
         self.open_property(property)
         if unit is not None:
             self.open_unit_and_ledger(unit, resident)
-
-    def get_rows(self, by, value):
-        table = self.scrape.define_table(by, value)
-        return self.scrape.get_rows(table)
 
     def open_property(self, property):
         self.webdriver.click(By.XPATH, "//a[contains(., 'CHANGE PROPERTY')]")

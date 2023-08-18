@@ -7,7 +7,7 @@ from PyQt5.QtWidgets import (
     QInputDialog,
 )
 
-from ledger_interact import LedgerInteract
+from ledger_tools.ledger_interact import LedgerInteract
 
 from functools import partial
 
@@ -48,7 +48,7 @@ class HelperWidget(QWidget):
 class LedgerOps(HelperWidget):
     def __init__(self, main_app, title):
         super().__init__(main_app, title)
-        self.ledger_interact = LedgerInteract(main_app.webdriver, main_app.resmap_ops)
+        self.ledger_interact = LedgerInteract(main_app.webdriver)
 
     def create_ledger_buttons(self):
         self.allocate_all_btn = self.create_button(
@@ -73,11 +73,11 @@ class LedgerOps(HelperWidget):
             )
             if ok and item:
                 is_concession = item == "Concession"
-                self.ledger_interact.current_month(operation, is_concession)
+                self.ledger_interact.loop_through_table(operation, is_concession)
             else:
                 QMessageBox.information(
                     self, "Operation canceled", "Credit operation was canceled."
                 )
                 return
         else:
-            self.ledger_interact.current_month(operation)
+            self.ledger_interact.loop_through_table(operation)

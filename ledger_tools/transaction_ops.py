@@ -1,6 +1,6 @@
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException
-from transaction_scrape import TransactionScrape
+from ledger_tools.transaction_scrape import TransactionScrape
 
 
 class TransactionOps:
@@ -62,3 +62,8 @@ class TransactionOps:
             amount,
             True,
         )
+
+    def delete_charge(self):
+        self.webdriver.click(By.NAME, "delete")
+        alert = self.webdriver.driver.switch_to.alert
+        alert.accept()

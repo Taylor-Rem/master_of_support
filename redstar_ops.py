@@ -1,6 +1,6 @@
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException
-from transaction_ops import TransactionOps
+from ledger_tools.transaction_ops import TransactionOps
 
 
 class RedstarOps:
